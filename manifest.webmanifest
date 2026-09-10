@@ -1,0 +1,17 @@
+{
+ "name": "Lantern (mobile review copy)",
+ "short_name": "Lantern review",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "fullscreen",
+ "orientation": "landscape",
+ "background_color": "#04070c",
+ "theme_color": "#04070c",
+ "icons": [
+  {
+   "src": "icon.png",
+   "sizes": "180x180",
+   "type": "image/png"
+  }
+ ]
+}
