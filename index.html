@@ -8,7 +8,59 @@
 <meta name="apple-mobile-web-app-title" content="Lantern review">
 <meta name="theme-color" content="#04070c">
 <link rel="apple-touch-icon" href="icon.png">
-<script>if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').then(r=>{ window.__swReady=true; }).catch(e=>{ window.__swErr=String(e); }); }); }</script>
+<script>
+/* test mode: ?sim=L,T,R,B simulates safe-area insets in points, so the layout can be checked off the device */
+(function(){ const m=/[?&]sim=([\d.]+),([\d.]+),([\d.]+),([\d.]+)/.exec(location.search); if(!m)return; const s=document.documentElement.style;
+  s.setProperty('--sim-l',m[1]+'px'); s.setProperty('--sim-t',m[2]+'px'); s.setProperty('--sim-r',m[3]+'px'); s.setProperty('--sim-b',m[4]+'px'); window.__simInsets=m.slice(1,5).map(Number); })();
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').then(r=>{ window.__swReady=true; }).catch(e=>{ window.__swErr=String(e); }); }); }
+</script>
+<style>
+/* ── the safe-area layer (review copy only) ──────────────────────────────────────────────
+   --sl/--st/--sr/--sb are the platform's safe-area insets (or the test simulation). Scenery stays edge to edge; every
+   essential reading and every control is moved inside the usable region. Fixed HUD pieces move with the individual
+   translate property, which adds to the positions the game sets itself (the tracked line and the feed move at run time) */
+:root{--sl:max(env(safe-area-inset-left,0px),var(--sim-l,0px));--st:max(env(safe-area-inset-top,0px),var(--sim-t,0px));
+  --sr:max(env(safe-area-inset-right,0px),var(--sim-r,0px));--sb:max(env(safe-area-inset-bottom,0px),var(--sim-b,0px));--kb:0px}
+#hudDepth,#airWrap,#airSec,#gauges,#hudObj{translate:var(--sl) var(--st)}
+#hudMotes,#feed{translate:calc(-1 * var(--sr)) var(--st)}
+#menuBtn{translate:0 var(--st);min-height:34px;padding:6px 16px}
+#warnBar{translate:0 var(--st);padding-left:calc(var(--sl) + 12px);padding-right:calc(var(--sr) + 12px)}
+#zoneCard{padding-left:calc(var(--sl) + 12px);padding-right:calc(var(--sr) + 12px)}
+#scanPop{translate:0 calc(-1 * var(--sb));padding-left:calc(var(--sl) + 84px);padding-right:calc(var(--sr) + 84px)}
+#hint{translate:0 calc(-1 * var(--sb));padding-left:calc(var(--sl) + 84px);padding-right:calc(var(--sr) + 84px)}
+#mapBtn{translate:var(--sl) calc(-1 * var(--sb))}
+#dimBtn,#flashBtn{translate:calc(-1 * var(--sr)) calc(-1 * var(--sb))}
+/* larger tap areas for the two small HUD controls; the label and the hit area stay together */
+#objBtn{min-height:32px;padding:5px 12px;font-size:11px}
+#holdVal{padding:8px 0 8px 28px;margin-top:-4px}
+/* every full-screen panel keeps its content inside the usable region and scrolls when it is taller than the screen;
+   auto margins centre a panel that fits and let one that does not start at the top, so nothing is cut off above */
+#dock,#menu,#chart,#journal,#holdPanel,#objView,#scard,#divesum,#cardView,#decree,#boathouse{box-sizing:border-box;
+  padding:calc(var(--st) + 8px) calc(var(--sr) + 8px) calc(var(--sb) + 8px + var(--kb)) calc(var(--sl) + 8px);overflow-y:auto;-webkit-overflow-scrolling:touch;
+  scroll-padding:calc(var(--st) + 8px) 0 calc(var(--sb) + 8px + var(--kb)) 0}
+#dock>*,#menu>*,#chart>*,#journal>*,#holdPanel>*,#objView>*,#scard>*,#divesum>*,#cardView>*,#decree>*,#boathouse>*{margin:auto !important;max-width:100% !important;flex-shrink:0}
+.dockcard,.dockbody,.menucard,#holdPanel>div,#objView .ovcard,#scard>div,#cardView>div,.jcard{max-height:calc(100dvh - var(--st) - var(--sb) - 16px - var(--kb)) !important}
+#holdPanel>div,#objView .ovcard,#scard>div,#cardView>div,.jcard{overflow-y:auto !important}
+.chartcard{max-width:100% !important}
+.dockbody,.menucard{scroll-padding-bottom:90px}
+#chartSide{max-height:calc(100dvh - var(--st) - var(--sb) - 90px);overflow-y:auto}
+.cclose,.ctab,.room,.mrow{min-height:34px}
+/* a short (landscape) screen shows the newest two notifications, and the scan text keeps clear of their column */
+@media (max-height:520px){ #feed .feeditem:nth-last-child(n+3){display:none}
+  #scanPop{padding-right:calc(var(--sr) + 268px)}
+  /* landscape: the flash sits beside the lamp on the bottom row, clear of the notification column */
+  #flashBtn{bottom:18px !important;right:82px !important}
+  #hint{padding-right:calc(var(--sr) + 144px)} }
+/* the round buttons draw above the notification column, so a notification never hides one */
+#mapBtn,#dimBtn,#flashBtn{z-index:6 !important}
+/* the label: in the water it sits under the menu button; on the dock and in the menu it is in the panel instead */
+#reviewBadge{position:fixed;left:50%;top:calc(var(--st) + 46px);translate:-50% 0;z-index:8;padding:1px 8px;font:700 9px/1.6 system-ui,sans-serif;
+  letter-spacing:.12em;color:#04070c;background:#ffd98a;border-radius:6px;pointer-events:none;opacity:.85;white-space:nowrap}
+body:has(#dock.open) #reviewBadge,body:has(#menu.open) #reviewBadge,body:has(#chart.open) #reviewBadge{display:none}
+.reviewLine{display:block;margin-top:4px;font:700 9.5px/1.4 system-ui,sans-serif;letter-spacing:.12em;color:#ffd98a}
+#simBands{position:fixed;inset:0;pointer-events:none;z-index:9999;display:none}
+#simBands div{position:absolute;background:rgba(255,40,40,.28)}
+</style>
 <style>/* Sora, embedded for offline use */
 /* latin-ext */
 @font-face {
@@ -424,7 +476,9 @@
 </style>
 
 <canvas id="cv"></canvas>
-<div id="reviewBadge" style="position:fixed;top:0;right:0;z-index:99;padding:2px 8px;font:700 9px/1.6 system-ui,sans-serif;letter-spacing:.12em;color:#04070c;background:#ffd98a;border-bottom-left-radius:8px;pointer-events:none;opacity:.9">MOBILE REVIEW · build 57m · OFFLINE COPY</div>
+<div id="reviewBadge">MOBILE REVIEW · 57m2 · OFFLINE</div>
+<div id="safeProbe" style="position:fixed;left:var(--sl);top:var(--st);right:var(--sr);bottom:calc(var(--sb) + var(--kb));pointer-events:none;visibility:hidden"></div>
+<div id="simBands"><div style="left:0;top:0;bottom:0;width:var(--sl)"></div><div style="right:0;top:0;bottom:0;width:var(--sr)"></div><div style="left:0;right:0;top:0;height:var(--st)"></div><div style="left:0;right:0;bottom:0;height:var(--sb)"></div></div>
 <div class="hud" id="hudDepth">depth <b id="depthVal">0</b> m<span id="zoneInline" style="font-size:10px;letter-spacing:.1em"></span></div>
 <div class="hud" id="airSec" style="top:42px;left:192px;font-size:11px;color:#ff8d7b;font-weight:700"></div>
 <div class="hud" id="gauges" style="top:64px;left:16px;font-size:11px;color:var(--dim);
@@ -10897,4 +10951,23 @@ $('dockBanked').textContent='0';
 $('debrief').innerHTML=`<div class="bnm">The sea is waiting</div>
   <div class="bfl">${P.dives?`${P.dives} dives logged · deepest ${Math.round(P.bestDepth)} m`:'No dives yet. The first one is always the shallowest.'}</div>`;
 requestAnimationFrame(frame);
+</script>
+<script>
+/* review copy 57m2: runs after the game */
+(function(){
+  const line=()=>{ const d=document.createElement('span'); d.className='reviewLine'; d.textContent="MOBILE REVIEW · 57m2 · OFFLINE COPY"; return d; };
+  const ms=document.querySelector('#menu .menusub'); if(ms)ms.appendChild(line());
+  const rf=document.querySelector('.railfoot'); if(rf)rf.appendChild(line());
+  if(window.__simInsets)document.getElementById('simBands').style.display='block';
+  const probe=document.getElementById('safeProbe');
+  window.safeRect=()=>probe.getBoundingClientRect();
+  /* the chart fits the usable height (the game sizes it to the whole window) */
+  chartSize=function(){ const r=safeRect(); CM.mh=clamp(Math.round(r.height-160),170,720); CM.mw=clamp(Math.min(Math.round(r.width*.5),Math.round(CM.mh*.78)),180,520); };
+  const redraw=()=>{ try{ if(chartState.open)drawChart(); }catch(e){} };
+  window.addEventListener('resize',redraw); window.addEventListener('orientationchange',()=>setTimeout(redraw,300));
+  /* the on-screen keyboard: panels gain its height as bottom padding, and the field being typed in is scrolled into view */
+  if(window.visualViewport){ const kb=()=>{ const h=Math.max(0,Math.round(innerHeight-visualViewport.height-visualViewport.offsetTop)); document.documentElement.style.setProperty('--kb',h+'px'); };
+    visualViewport.addEventListener('resize',kb); visualViewport.addEventListener('scroll',kb); }
+  document.addEventListener('focusin',e=>{ const t=e.target; if(t&&t.matches&&t.matches('textarea,input'))setTimeout(()=>t.scrollIntoView({block:'center'}),350); });
+})();
 </script>
